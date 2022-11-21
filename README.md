@@ -8,3 +8,6 @@ The BASH script will then create 9 random 4-digit passcodes between 1000 and 999
 Unfortunatly due to time constraints, I could not automate the process further to have them uploaded to Google Drive. There exists a gdrive package that I could've included in the BASH script. In addition, to prevent me from seeing the passcodes I could've sent them automatically to people as well using one of the many email, mail, gmail packages that exist.
 
 So I had to manually upload them to Google Drive and manually send passwords to everybody.
+
+# YES! I KNOW THE CODE IS UGLY!
+### but i didnt have much time v(ಥ ̯ ಥ)v
