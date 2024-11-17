@@ -1,0 +1,59 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body>
+    <header>
+      <h1>GooglyBooglyz Secret Santa 2024</h1>
+    </header>
+    <div class = "img-wrap">
+      <img src="img\christmaslights.gif", alt="lights", class = "lights">
+    </div>
+    <div class ="main-content">
+        <div class ="container">
+          <div class = "main-content">
+            <label for="uname"><b>Username</b></label>
+            <input type="text" placeholder="Enter Username" name="uname" required>
+          </div>
+        </div>
+
+        <div class ="container">
+          <div class = "main-content">
+            <label for="psw"><b>Password</b></label>
+            <input type="password" placeholder="Enter Password" name="pwd" required>
+          </div>
+        </div>
+
+        <div class ="container">
+          <div class = "main-content">
+            <button class="regular-button" onclick="loginCheck()">Login</button>
+          </div>
+        </div>
+    </div>
+
+    <script>
+      async function loginCheck(){
+        const uname = document.getElementsByName('uname')[0].value;
+        const pwd = document.getElementsByName('pwd')[0].value;
+
+        login_response = await fetch(`/login_check?username=${uname}&password=${pwd}`)
+        login_response = await login_response.json();
+
+        if (login_response === false) {
+          alert('Incorrect password or username')
+          return;
+        }
+
+        if (login_response === true) {
+          const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/secretsanta';
+
+                document.body.appendChild(form);
+                form.submit();
+        }
+      }
+    </script>
+  </body>
+</html>

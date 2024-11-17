@@ -1,0 +1,72 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body>
+      <header>
+        <h1>GooglyBooglyz Secret Santa 2024</h1>
+      </header>
+    <div class = "img-wrap">
+      <img src="img\christmaslights.gif", alt="lights", class = "lights">
+    </div>
+    <div class="main-content">
+      <div class="container">
+        <div class="main-content">
+          <label for="uname"><b>Set Your Username</b></label>
+          <input type="text" placeholder="Enter Username" name="uname" required>  
+        </div>
+      </div>
+      
+      <div class ="space">
+        <h1></h1>
+      </div>
+
+      <div class="container">
+        <div class="main-content">
+          <label for="psw"><b>Enter Password Provided to You</b></label>
+          <input type="password" placeholder="Enter Password" name="psw" required>  
+        </div>
+      </div>
+      
+      <div class ="space">
+        <h1></h1>
+      </div>
+
+      <div class="container">
+        <div class="main-content">
+          <button class="regular-button" type="button" onclick="register()">Register</button>
+        </div>
+      </div>
+    </div>
+    <script>
+        async function register() {
+            const uname = document.getElementsByName('uname')[0].value;
+            const pwd = document.getElementsByName('psw')[0].value;
+
+            // check if the password has been used
+            const pwd_response = await fetch(`/pwdused?pwd=${encodeURIComponent(pwd)}`);
+            const pwd_used = await pwd_response.json();
+
+            if (pwd_used === false) {  // using === to check the boolean value
+                alert('Password Provided Has Been Used Already');
+                return;
+            }
+
+            // attempt to register user
+            const register_response = await fetch(`/makelogin?username=${encodeURIComponent(uname)}&password=${encodeURIComponent(pwd)}`);
+            const registered = await register_response.json();
+
+            if (registered === true) {  // using === to check the boolean value
+                // create a form to perform a POST request to /login
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/login';
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+  </body>
+</html>

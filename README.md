@@ -1,13 +1,17 @@
-# GooglyBooglyz Secret Santa 2022
-There is a BASH script that has an R script inside it. 
+# GooglyBooglyz Secret Santa 2024
 
-The BASH script will run the R script, which will match gift givers and recipients, ensure that they are not the same, ensure that they did not get the same people as last year, and then create the .txt files of who gets who.
+New and Improved. Nice and Clean.
 
-The BASH script will then create nine random 4-digit passcodes between 1000 and 9999 and assign them to a zipped version of each.txt file.
+Python for back-end and HTML/CSS for front-end.
 
-Unfortunately, due to time constraints, I could not automate the process further to have them uploaded to Google Drive. There exists a gdrive package that I could've included in the BASH script. In addition, to prevent me from seeing the passcodes, I could've sent them automatically to other people as well using one of the many email, mail, or gmail packages that exist.
+The Python runs FastAPI and each function of the program is treated like an API call.
 
-So I had to manually upload them to Google Drive and manually send passwords to everybody.
+When the FastAPI is first launched, it will generate a random password for the Administrator. It will not be recorded or saved and is up to the Administrator to keep safe.
 
-# YES! I KNOW THE CODE IS UGLY!
-### but i didnt have much time v(ಥ ̯ ಥ)v
+It is setup so a designated administator can make call the API to make a list of random givers and recipients and a list of passwords. The API function will ensure that givers and recipients are not the same, and then create the .txt files of who gets who in the list of random gives and recipients.
+
+Additional functions can be performed by the Administrator to restore the Secret Santa giver/reciever and password lists in case FastAPI goes down.
+
+~The End~
+
+P.S. I dont wan't to explain everything lol

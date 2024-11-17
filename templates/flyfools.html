@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="/static/styles.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <div class="main-content">
+            <img onclick="home()" src="img\gandalf.png" class="gandalf">
+        <h1>fly, you fools!</h1>
+    </div>
+    <script>
+        async function home(){
+            const form = document.createElement('form');
+                form.method = 'GET';
+                form.action = '/';
+
+                document.body.appendChild(form);
+                form.submit();
+        }
+    </script>
+</html>
