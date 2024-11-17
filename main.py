@@ -3,15 +3,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import random
 import os
-import shutil
 import datetime
 import string
-from mangum import Mangum
 
 users_db = {}
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
-handler = Mangum(app)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
