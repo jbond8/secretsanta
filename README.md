@@ -1,17 +1,22 @@
-# GooglyBooglyz Secret Santa 2024
+# GooglyBooglyz Secret Santa 2024  
 
-New and Improved. Nice and Clean.
+new and improved. nice and clean.  
 
-Python for back-end and HTML/CSS for front-end.
+backend: python (fastapi)  
+frontend: html/css  
 
-The Python runs FastAPI and each function of the program is treated like an API call.
+the backend uses fastapi, treating each program function as an api call.  
 
-When the FastAPI is first launched, it will generate a random password for the Administrator. It will not be recorded or saved and is up to the Administrator to keep safe.
+on initial launch, fastapi generates a random admin password. this password is not stored or saved—it's up to the admin to keep it safe.  
 
-It is setup so a designated administator can make call the API to make a list of random givers and recipients and a list of passwords. The API function will ensure that givers and recipients are not the same, and then create the .txt files of who gets who in the list of random gives and recipients.
+the setup allows a designated administrator to call the api to generate:  
+1. a list of random givers and recipients  
+2. a list of passwords  
 
-Additional functions can be performed by the Administrator to restore the Secret Santa giver/reciever and password lists in case FastAPI goes down.
+the api ensures no one is matched to themselves, then outputs `.txt` files with the assignments.  
 
-~The End~
+admins can also restore giver/recipient and password lists if fastapi goes down.  
 
-P.S. I dont wan't to explain everything lol
+~the end~  
+
+p.s. don’t ask me to explain everything lol  
