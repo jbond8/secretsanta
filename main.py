@@ -20,19 +20,24 @@ base_logins_store = []
 new_logins_store = {}
 giftDic_store = []
 
+start_path = os.getcwd()
+log_path = os.path.join(start_path, 'logs')
+
+if not os.path.exists(log_path):
+    os.mkdir(log_path)
+
 onering =""
 choices = string.punctuation + string.digits + string.ascii_letters
 for digit in range(10):
     choice = random.choice(choices)
     onering += choice
 
+timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
+log = os.open(os.path.join(log_path, f"{timestamp}. [REGISTRATION]. ADMIN"), os.O_WRONLY | os.O_CREAT)
+log_text = f"ADMIN-PASS: {onering}\nDATE MADE: {datetime.datetime.now()}"
+os.write(log, log_text.encode())
+
 print(f"One Ring Inscribed '{onering}' to Rule Them All...")
-
-start_path = os.getcwd()
-log_path = os.path.join(start_path, 'logs')
-
-if not os.path.exists(log_path):
-    os.mkdir(log_path)
 
 def get_logins():
     return new_logins_store
