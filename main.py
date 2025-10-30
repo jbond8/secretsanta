@@ -1,41 +1,99 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import random
-import os
-import datetime
-import string
+import random, os, datetime, string, json, tempfile
 
 users_db = {}
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 app.mount("/img", StaticFiles(directory="templates/img"), name="img")
-
 templates = Jinja2Templates(directory="templates")
 
-base_logins_store = []
-new_logins_store = {}
-giftDic_store = []
+base_logins_store = []  # [{pwd: giver, ...}]
+new_logins_store = {}   # {username: password}
+giftDic_store = []      # [{giver: recipient, ...}]
 
 start_path = os.getcwd()
 log_path = os.path.join(start_path, 'logs')
+os.makedirs(log_path, exist_ok=True)
 
-if not os.path.exists(log_path):
-    os.mkdir(log_path)
+STATE_PATH = os.path.join(log_path, "state.json")
 
-onering =""
+def _atomic_write_json(path: str, obj: dict):
+    data = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".state.", suffix=".json")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    finally:
+        try:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        except Exception:
+            pass
+
+def save_state():
+    state = {
+        "onering": onering,
+        "giftDic": giftDic_store[0] if giftDic_store else {},
+        "passList": base_logins_store[0] if base_logins_store else {},
+        "new_logins": new_logins_store,
+        "saved_at": datetime.datetime.now().isoformat(timespec="seconds"),
+    }
+    _atomic_write_json(STATE_PATH, state)
+
+def load_state():
+    if not os.path.exists(STATE_PATH):
+        return None
+    with open(STATE_PATH, "r", encoding="utf-8") as f:
+        state = json.load(f)
+
+    # restore globals
+    global onering
+    if "onering" in state and isinstance(state["onering"], str) and state["onering"]:
+        onering = state["onering"]
+
+    giftDic_store.clear()
+    base_logins_store.clear()
+
+    giftDic = state.get("giftDic") or {}
+    passList = state.get("passList") or {}
+    if isinstance(giftDic, dict):
+        giftDic_store.append(giftDic)
+    if isinstance(passList, dict):
+        base_logins_store.append(passList)
+
+    new_logins_store.clear()
+    new_logins_store.update(state.get("new_logins") or {})
+
+# generate or load admin ring
+onering = ""
 choices = string.punctuation + string.digits + string.ascii_letters
-for digit in range(10):
-    choice = random.choice(choices)
-    onering += choice
+
+def _gen_ring(n=12):
+    return "".join(random.choice(choices) for _ in range(n))
+
+# first try to load, else create & save
+if os.path.exists(STATE_PATH):
+    try:
+        load_state()
+    except Exception:
+        # fall back to fresh ring if state corrupt
+        onering = _gen_ring()
+        save_state()
+else:
+    onering = _gen_ring()
+    save_state()
 
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
 log = os.open(os.path.join(log_path, f"{timestamp}. [REGISTRATION]. ADMIN"), os.O_WRONLY | os.O_CREAT)
 log_text = f"ADMIN-PASS: {onering}\nDATE MADE: {datetime.datetime.now()}"
-os.write(log, log_text.encode())
+os.write(log, log_text.encode()); os.close(log)
 
 print(f"One Ring Inscribed '{onering}' to Rule Them All...")
 
@@ -47,6 +105,15 @@ def get_baselogins():
 
 def get_gifts():
     return giftDic_store
+
+@app.on_event("startup")
+async def bootstrap_from_state():
+    # already tried at import time, but do it again safely on uvicorn reloads
+    try:
+        load_state()
+        print("state restored on startup.")
+    except Exception as e:
+        print(f"state restore failed: {e}")
 
 @app.get('/')
 async def home(request:Request):
@@ -94,12 +161,13 @@ async def makelogin(request: Request,username, password):
     username = str(username)
     password = str(password)
     new_logins_store[username] = password
+    save_state()
 
     client_ip = request.client.host
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
     log = os.open(os.path.join(log_path, f"{timestamp}. [REGISTRATION]. {username}"), os.O_WRONLY | os.O_CREAT)
     log_text = f"CLIENT IP: {client_ip}\nUSERNAME: {username}\nPASSWORD: {password}\nDATE MADE: {datetime.datetime.now()}"
-    os.write(log, log_text.encode())
+    os.write(log, log_text.encode()); os.close(log)
 
     print()
 
@@ -121,7 +189,7 @@ async def logins(request: Request, ring = 0):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
         log = os.open(os.path.join(log_path, f"{timestamp}. [UNAUTHORIZED ATTEMPT]. LOGINS"), os.O_WRONLY | os.O_CREAT)
         log_text = f"CLIENT IP: {client_ip}\nDATE: {timestamp}"
-        os.write(log, log_text.encode())
+        os.write(log, log_text.encode()); os.close(log)
 
         return await flyfool(request=request)
 
@@ -141,7 +209,7 @@ async def gifts(request: Request, ring = 0):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
         log = os.open(os.path.join(log_path, f"{timestamp}. [UNAUTHORIZED ATTEMPT]. GIFTS"), os.O_WRONLY | os.O_CREAT)
         log_text = f"CLIENT IP: {client_ip}\nDATE: {datetime.datetime.now()}"
-        os.write(log, log_text.encode())
+        os.write(log, log_text.encode()); os.close(log)
 
         return await flyfool(request=request)
 
@@ -153,28 +221,15 @@ async def login_check(username, password):
     print(f"username: {username}")
     print(f"password: {password}")
 
+    username = str(username); password = str(password)
     logins = get_logins()
-    
-    users = []
-    for user in logins.keys():
-        users.append(user)
-
-    pwds = []
-    for pwd in logins.values():
-        pwds.append(pwd)
-    
-    if username in users:
-        if password in pwds:
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-            log = os.open(os.path.join(log_path, f"{timestamp}. [LOGIN]. {username}"), os.O_WRONLY | os.O_CREAT)
-            log_text = f"USERNAME: {username}\nPASSWORD: {password}\nDATE MADE: {datetime.datetime.now()}"
-            os.write(log, log_text.encode())
-
-            return True
-        else:
-            return False
-    else:
-        return False
+    ok = (username in logins) and (logins.get(username) == password)
+    if ok:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
+        log = os.open(os.path.join(log_path, f"{timestamp}. [LOGIN]. {username}"), os.O_WRONLY | os.O_CREAT)
+        log_text = f"USERNAME: {username}\nDATE MADE: {datetime.datetime.now()}"  # stop logging password
+        os.write(log, log_text.encode()); os.close(log)
+    return ok
     
 @app.get('/gift_check')
 async def gift_check(password):
@@ -184,6 +239,10 @@ async def gift_check(password):
     password = str(password)
     gifts = get_gifts()
     logins = get_baselogins()
+
+    if not gifts or not logins or not logins[0]:
+        return False
+    return gifts[0].get(logins[0].get(password), False)
 
     pwds = []
     for pwd in logins[0].keys():
@@ -223,12 +282,13 @@ async def make_secretsanta(request: Request, numAttend, givers, ring):
 
         base_logins_store.append(passList)
         giftDic_store.append(giftDic)
+        save_state()
 
         client_ip = request.client.host
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
         log = os.open(os.path.join(log_path, f"{timestamp}. [OFFICIAL]. MAKE-SECRET-SANTA"), os.O_WRONLY | os.O_CREAT)
         log_text = f"GIFT DIC: {giftDic}\nPASSWORDS: {passList}"
-        os.write(log, log_text.encode())
+        os.write(log, log_text.encode()); os.close(log)
 
         return giftDic, passList
     else:
@@ -236,7 +296,7 @@ async def make_secretsanta(request: Request, numAttend, givers, ring):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
         log = os.open(os.path.join(log_path, f"{timestamp}. [UNAUTHORIZED ATTEMPT]. MAKE-SECRET-SANTA"), os.O_WRONLY | os.O_CREAT)
         log_text = f"CLIENT IP: {client_ip}\nDATE: {timestamp}"
-        os.write(log, log_text.encode())
+        os.write(log, log_text.encode()); os.close(log)
 
         return await flyfool(request=request)
 
@@ -280,12 +340,13 @@ async def restore_secretsanta(request: Request, giftDic, passList, ring):
 
         base_logins_store.append(passList)
         giftDic_store.append(giftDic)
+        save_state()
 
         client_ip = request.client.host
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
         log = os.open(os.path.join(log_path, f"{timestamp}. [OFFICIAL]. RESTORE-SECRET-SANTA"), os.O_WRONLY | os.O_CREAT)
         log_text = f"GIFT DIC: {giftDic}\nPASSWORDS: {passList}"
-        os.write(log, log_text.encode())
+        os.write(log, log_text.encode()); os.close(log)
 
         return giftDic, passList
     else:
@@ -293,6 +354,6 @@ async def restore_secretsanta(request: Request, giftDic, passList, ring):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
         log = os.open(os.path.join(log_path, f"{timestamp}. [UNAUTHORIZED ATTEMPT]. RESTORE-SECRET-SANTA"), os.O_WRONLY | os.O_CREAT)
         log_text = f"CLIENT IP: {client_ip}\nDATE: {timestamp}"
-        os.write(log, log_text.encode())
+        os.write(log, log_text.encode()); os.close(log)
 
         return await flyfool(request=request)

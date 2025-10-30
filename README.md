@@ -1,6 +1,4 @@
-# GooglyBooglyz Secret Santa 2024  
-
-new and improved. nice and clean.  
+# GooglyBooglyz Secret Santa 2025  
 
 backend: python (fastapi)  
 frontend: html/css  
